@@ -30,61 +30,64 @@ export const getAllCertificates = (req, res) => {
   });
 };
 
-export const enterCertificates = (req, res) => {
+export const enterCertificates =async (req, res) => {
+  try {
   const newDocument = new certificates({
    
     image: req.file.path,
   
 
   });
-
-  newDocument.save((err, newDocument) => {
-    if (err) return res.status(500).send(err);
-    res.send(newDocument);
-  });
+  await newDocument.save();
+  res.status(201).json(newDocument);
+} catch (error) {
+  if (error instanceof ValidationError) {
+    return res.status(400).json({ message: error.message });
+  }
+  res.status(500).json({ message: "Internal Server Error" });
+}
 };
 
-export const findACertificates = (req, res) => {
-  const id = req.params.id;
-  console.log(id)
-  certificates.findById(id, (error, document) => {
-    if (error) return res.status(500).send(error);
-    if (!document)
-      return res.status(404).send("No document found with the given ID.");
-
+export const findACertificates = async (req, res) => {
+  try {
+    const id = req.params.id;
+    console.log(id);
+    const document = await certificates.findById(id);
+    if (!document) return res.status(404).send("No document found with the given ID.");
     res.status(200).json(document);
-  });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send(error);
+  }
 };
 
-export const deleteACertificates = (req, res) => {
-  const id = req.params.id;
-  certificates.deleteOne({ _id: id }, (error) => {
-    if (error) {
-      res.status(500).json({ error });
-    } else {
-      res.status(200).json({ message: "Document deleted successfully." });
-    }
-  });
+export const deleteACertificates = async (req, res) => {
+  try {
+    const id = req.params.id;
+    await certificates.deleteOne({ _id: id });
+    res.status(200).json({ message: "Document deleted successfully." });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error });
+  }
 };
-export const updateACertificates = (req, res) => {
-  const id = req.params.id;
- 
-  const image = req.file.path
+export const updateACertificates = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const image = req.file.path;
+    const certificatesDoc = await certificates.findByIdAndUpdate(
+      id,
+      { $set: { image } },
+     
+    );
 
-  certificates.findByIdAndUpdate(
-    id,
-    { $set: { image } },
-    (error, certificatesDoc) => {
-      if (error) {
-        console.error(error);
-        return res.status(500).send("Error updating document in the database");
-      }
-
-      if (!certificatesDoc) {
-        return res.status(404).send("Document not found");
-      }
-
-      res.send("Document updated successfully.");
+    if (!certificatesDoc) {
+      return res.status(404).send("Document not found");
     }
-  );
+
+    res.status(200).json("Document updated successfully.");
+  } catch (error) {
+    console.error(error);
+    return res.status(500).send("Error updating document in the database");
+  }
 };

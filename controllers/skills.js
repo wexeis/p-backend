@@ -29,14 +29,8 @@ export const getAllSkills = (req, res) => {
   });
 };
 
-export const enterSkills = (req, res) => {
-  console.log('1')
-  console.log(req.body.quote)
-  console.log('2')
-  console.log(req.body.descripion)
-  console.log('3')
-  console.log(req.body)
-  console.log('4')
+export const enterSkills =  async (req, res) => {
+  try {
   
   const newDocument =  new skills({
     quote: req.body.quote,
@@ -48,59 +42,59 @@ export const enterSkills = (req, res) => {
   
  
 
-  newDocument.save((err, newDocument) => {
-    if (err) return res.status(500).send(err);
-    res.status(200).json(newDocument);
-  });
+  await newDocument.save();
+    res.status(201).json(newDocument);
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      return res.status(400).json({ message: error.message });
+    }
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 };
 
-export const findAnSkills = (req, res) => {
-  const id = req.params.id;
-  console.log(id)
-  skills.findById(id, (error, document) => {
-    if (error) return res.status(500).send(error);
-    if (!document)
-      return res.status(404).send("No document found with the given ID.");
 
+export const findAnSkills = async (req, res) => {
+  try {
+    const id = req.params.id;
+    console.log(id);
+    const document = await skills.findById(id);
+    if (!document) return res.status(404).send("No document found with the given ID.");
     res.status(200).json(document);
-  });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send(error);
+  }
 };
 
-
-export const deleteAnSkills = (req, res) => {
-  const id = req.params.id;
-  skills.deleteOne({ _id: id }, (error) => {
-    if (error) {
-      res.status(500).json({ error });
-    } else {
-      res.status(200).json({ message: "Document deleted successfully." });
-    }
-  });
+export const deleteAnSkills = async (req, res) => {
+  try {
+    const id = req.params.id;
+    await skills.deleteOne({ _id: id });
+    res.status(200).json({ message: "Document deleted successfully." });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error });
+  }
 };
 
-export const updateAnSkills = (req, res) => {
-  const id = req.params.id;
-  const quote = req.body.quote;
-  const description = req.body.description;
-  const image = req.file.path;
+export const updateAnSkills = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const quote = req.body.quote;
+    const description = req.body.description;
+    const image = req.file.path;
 
-  console.log(req.body.description)
-  console.log(req.body.quote)
+    console.log(req.body.description);
+    console.log(req.body.quote);
 
-  skills.findByIdAndUpdate(
-    id,
-    { $set: { quote, description, image } },
-    (error, aboutDoc) => {
-      if (error) {
-        console.error(error);
-        return res.status(500).send("Error updating document in the database");
-      }
+    const aboutDoc = await skills.findByIdAndUpdate(id, {
+      $set: { quote, description, image },
+    });
 
-      if (!aboutDoc) {
-        return res.status(404).send("Document not found");
-      }
-
-      res.status(200).json("Document updated successfully.");
-    }
-  );
+    if (!aboutDoc) return res.status(404).send("Document not found");
+    res.status(200).json("Document updated successfully.");
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Error updating document in the database");
+  }
 };
